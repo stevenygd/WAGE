@@ -95,15 +95,25 @@ def variance_scaling_initializer(factor=2.0, mode='FAN_IN', uniform=False,
       if bitsW < 32:
         beta = 1.5
         Wm = beta / Quantize.S(bitsW)
+        print("QS:%s"%(Quantize.S(bitsW)))
+        print("WM=%s"%Wm)
         scale = 2 ** round(math.log(Wm / limit, 2.0))
+        print("SCALE-1:%s"%scale)
         scale = scale if scale > 1 else 1.0
+        print("SCALE-2:%s"%scale)
         limit = Wm if Wm > limit else limit
+        print("LIMIT:%s"%limit)
       Option.W_scale.append(scale)
       return limit
 
     if uniform:
       # To get stddev = math.sqrt(factor / n) need to adjust for uniform.
       limit = scaleLimit(math.sqrt(3.0 * factor / n))
+      print("INPUT:%s"%(math.sqrt(3.0 * factor / n)))
+      print("FANIN=%s"%fan_in)
+      print("Factor=%s"%factor)
+      print("N=%s"%n)
+      print("Limit=%s"%limit)
       return random_ops.random_uniform(shape, -limit, limit,dtype, seed=seed)
 
     else:
@@ -112,5 +122,4 @@ def variance_scaling_initializer(factor=2.0, mode='FAN_IN', uniform=False,
       return random_ops.truncated_normal(shape, 0.0, trunc_stddev, dtype,
                                          seed=seed)
   # pylint: enable=unused-argument
-
   return _initializer

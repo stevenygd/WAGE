@@ -7,7 +7,6 @@ import myInitializer
 
 class NN(object):
   def __init__(self, X, Y, training=True, global_step=None):
-
     self.shapeX = X.get_shape().as_list()
     self.shapeY = Y.get_shape().as_list()
 
@@ -46,7 +45,10 @@ class NN(object):
       assert False, 'None network model is defined!'
 
     self.out = out
-    return self._loss(out, self.Y)
+    # loss = self._loss(out, self.Y)
+    loss, error = self._loss(out, self.Y)
+    tf.summary.scalar("loss", loss)
+    return loss, error
 
 
   def _VGG7(self):
@@ -94,11 +96,16 @@ class NN(object):
 
 
   def _loss(self, out, labels):
+    print(out.get_shape())
+    tf.summary.histogram("out", out)
     labels = tf.cast(labels,tf.float32)
 
     with tf.name_scope('loss'):
       if self.lossFunc == 'SSE':
-        loss = 0.5 * tf.reduce_sum(tf.square(labels - out))
+        tf.summary.histogram("labels", labels)
+        diff_2 = tf.square(labels - out)
+        # loss = 0.5 * tf.reduce_sum(tf.square(labels - out))
+        loss = 0.5 * tf.reduce_sum(diff_2)
       else:
         loss = self.lossFunc(labels, out)
       if self.L2 > 0:
@@ -146,6 +153,7 @@ class NN(object):
     with tf.name_scope(name) as scope:
       self.W.append(tf.get_variable(name=name, shape=shape, initializer=self.initializer))
 
+      tf.summary.histogram(name, self.W[-1])
       print 'W:', self.W[-1].device, scope, shape,
       if Quantize.bitsW <= 16:
         # manually clip and quantize W if needed
@@ -155,6 +163,7 @@ class NN(object):
         scale = Option.W_scale[len(self.W)-1]
         print 'Scale:%d' % scale
         self.W_q.append(Quantize.W(self.W[-1], scale))
+        tf.summary.histogram("quant-"+name, self.W_q[-1])
         return self.W_q[-1]
       else:
         print ''

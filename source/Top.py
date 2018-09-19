@@ -91,7 +91,11 @@ def main():
   # Start the queue runners.
   tf.train.start_queue_runners(sess=sess)
 
+  # Merge all the summaries and write them out to /tmp/mnist_logs (by default)
+  merged = tf.summary.merge_all()
+  train_writer = tf.summary.FileWriter('runs/time-%d'%(int(time.time())), sess.graph)
 
+  print(Option.W_scale)
 
   def getErrorTest():
     errorTest = 0.
@@ -135,8 +139,9 @@ def main():
       if Option.debug is False:
         _, loss_delta, error_delta = sess.run([train_op, lossTrainBatch, errorTrainBatch])
       else:
-        _, loss_delta, error_delta, H, W, W_q, gradH, gradW, gradW_q=\
-        sess.run([train_op, lossTrainBatch, errorTrainBatch, Net[0].H, Net[0].W, Net[0].W_q, Net[0].gradsH, Net[0].gradsW, gradTrainBatch_quantize])
+        summary, _, loss_delta, error_delta, H, W, W_q, gradH, gradW, gradW_q=\
+        sess.run([merged, train_op, lossTrainBatch, errorTrainBatch, Net[0].H, Net[0].W, Net[0].W_q, Net[0].gradsH, Net[0].gradsW, gradTrainBatch_quantize])
+        train_writer.add_summary(summary, epoch*batchNumTrain+batchNum)
 
       lossTotal += loss_delta
       errorTotal += error_delta

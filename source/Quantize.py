@@ -62,10 +62,14 @@ def G(x):
       if x.name.lower().find('batchnorm') > -1:
         return x  # batch norm parameters, not quantize now
 
+      tf.summary.histogram("g-"+x.name, x)
       xmax = tf.reduce_max(tf.abs(x))
+      tf.summary.scalar("g-max-"+x.name, xmax)
       x = x / Shift(xmax)
+      tf.summary.histogram("g-shifted-"+x.name, x)
 
       norm = Q(LR * x, bitsR)
+      tf.summary.histogram("g-norm-"+x.name, norm)
 
       norm_sign = tf.sign(norm)
       norm_abs = tf.abs(norm)
@@ -74,16 +78,23 @@ def G(x):
       rand_float = tf.random_uniform(x.get_shape(), 0, 1)
       norm = norm_sign * ( norm_int + 0.5 * (tf.sign(norm_float - rand_float) + 1) )
 
-      return norm / S(bitsG)
+      ret = norm / S(bitsG)
+      tf.summary.histogram("g-quant-"+x.name, ret)
+      return ret
 
 @tf.RegisterGradient('Error')
 def error(op, x):
   if bitsE > 15:
     return x
   else:
+    tf.summary.histogram("back-"+(x.name), x)
     xmax = tf.reduce_max(tf.abs(x))
+    tf.summary.scalar("back-max-"+(x.name), xmax)
     xmax_shift = Shift(xmax)
-    return Q(C( x /xmax_shift, bitsE), bitsE)
+    tf.summary.scalar("back-xmaxshift-"+(x.name), xmax_shift)
+    ret = Q(C( x /xmax_shift, bitsE), bitsE)
+    tf.summary.histogram("quant-back-"+(x.name), ret)
+    return ret
 
 def E(x):
   with tf.name_scope('QE'):

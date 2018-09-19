@@ -1,7 +1,8 @@
 import time
 import tensorflow as tf
 
-debug = False
+# debug = False
+debug = True
 Time = time.strftime('%Y-%m-%d', time.localtime())
 # Notes = 'vgg7 2888'
 Notes = 'temp'
